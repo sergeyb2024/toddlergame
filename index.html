@@ -104,6 +104,10 @@
       z-index: 5;
     }
 
+    .slot[data-accept="star"] {
+      border: 6px solid #000; /* Sharper outline for star */
+    }
+
     .slot[data-accept="circle"], .piece[data-shape="circle"] {
       border-radius: 50%;
       width: 10vw;
@@ -329,6 +333,7 @@
         piece.dataset.lastLeft = shuffledPositions[index].left;
         piece.dataset.lastTop = shuffledPositions[index].top;
         piece.style.transform = 'scale(1)';
+        delete piece.dataset.placed; // Clear placed state
       });
 
       // Reset slots
@@ -340,7 +345,7 @@
 
     // Mouse event handlers
     function onMouseDown(e) {
-      if (e.target.classList.contains('piece')) {
+      if (e.target.classList.contains('piece') && !e.target.dataset.placed) {
         e.preventDefault();
         isDragging = true;
         draggedPiece = e.target;
@@ -445,10 +450,10 @@
 
           if (minDistance < 5 * window.innerWidth / 100 && draggedPiece.dataset.shape === closestSlot.dataset.accept) {
             const slotRect = closestSlot.getBoundingClientRect();
-            draggedPiece.style.left = ((slotRect.left - playAreaRect.left) / playAreaRect.width) * 100 + '%';
-            draggedPiece.style.top = ((slotRect.top - playAreaRect.top) / playAreaRect.height) * 100 + '%';
-            closestSlot.appendChild(draggedPiece);
+            draggedPiece.style.left = ((slotRect.left - pieceBoxRect.left) / pieceBoxRect.width) * 100 + '%';
+            draggedPiece.style.top = ((slotRect.top - pieceBoxRect.top) / pieceBoxRect.height) * 100 + '%';
             draggedPiece.classList.add('correct');
+            draggedPiece.dataset.placed = 'true';
             correctAudio.play();
             snapped = true;
             placedPieces++;
@@ -476,7 +481,7 @@
 
     // Touch event handlers
     function onTouchStart(e) {
-      if (e.target.classList.contains('piece')) {
+      if (e.target.classList.contains('piece') && !e.target.dataset.placed) {
         e.preventDefault();
         isDragging = true;
         draggedPiece = e.target;
@@ -581,10 +586,10 @@
 
           if (minDistance < 5 * window.innerWidth / 100 && draggedPiece.dataset.shape === closestSlot.dataset.accept) {
             const slotRect = closestSlot.getBoundingClientRect();
-            draggedPiece.style.left = ((slotRect.left - playAreaRect.left) / playAreaRect.width) * 100 + '%';
-            draggedPiece.style.top = ((slotRect.top - playAreaRect.top) / playAreaRect.height) * 100 + '%';
-            closestSlot.appendChild(draggedPiece);
+            draggedPiece.style.left = ((slotRect.left - pieceBoxRect.left) / pieceBoxRect.width) * 100 + '%';
+            draggedPiece.style.top = ((slotRect.top - pieceBoxRect.top) / pieceBoxRect.height) * 100 + '%';
             draggedPiece.classList.add('correct');
+            draggedPiece.dataset.placed = 'true';
             correctAudio.play();
             snapped = true;
             placedPieces++;
