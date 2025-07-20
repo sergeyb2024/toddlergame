@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Race App Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles to enhance Tailwind for the sporty/luxury look and specific shapes */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f0f0; /* Fallback */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Specific styles for accordion headers to achieve lozenge shape and hover effects */
+        .accordion-header {
+            position: relative;
+            z-index: 10; /* Ensure header is above content border */
+            border-radius: 9999px; /* Full rounded for lozenge */
+            margin-left: 1rem; /* mx-4 equivalent */
+            margin-right: 1rem; /* mx-4 equivalent */
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6); /* shadow-inner equivalent */
+            transition: all 0.3s ease-in-out; /* Smooth transitions */
+        }
+
+        .accordion-header:hover {
+            transform: translateY(-3px); /* translate-y-[-3px] equivalent */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1); /* shadow-xl equivalent */
+        }
+
+        /* Styling for accordion content to align with lozenge headers */
+        .accordion-content {
+            border-top: 1px solid #4a5568; /* border-gray-600 equivalent */
+            background-color: #1a202c; /* bg-gray-900 equivalent */
+            border-bottom-left-radius: 0.5rem; /* rounded-b-lg equivalent */
+            border-bottom-right-radius: 0.5rem; /* rounded-b-lg equivalent */
+            margin-left: 1rem; /* mx-4 equivalent */
+            margin-right: 1rem; /* mx-4 equivalent */
+            padding-top: 1rem; /* p-4 equivalent */
+            padding-bottom: 1rem; /* p-4 equivalent */
+            display: none; /* Hidden by default */
+        }
+
+        .accordion-content.active {
+            display: block; /* Shown when active */
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* bg-black bg-opacity-70 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .custom-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #22c55e; /* bg-green-600 */
+            color: white;
+            padding: 1.5rem 2.5rem; /* p-6 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem; /* gap-4 */
+            max-width: 24rem; /* max-w-sm */
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black flex items-center justify-center min-h-screen p-4 text-gray-200">
+
+    <div class="container mx-auto p-8 bg-zinc-900 rounded-xl shadow-2xl border-t-4 border-blue-600 max-w-4xl">
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-700">
+            <div class="p-3 rounded-lg bg-gray-800 border border-gray-700 shadow-md">
+                <span class="font-extrabold text-2xl text-blue-500 tracking-wider">RACE.APP</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button
+                    id="savedButton"
+                    class="p-3 rounded-lg bg-gray-800 border border-gray-700 shadow-md cursor-pointer hover:bg-gray-700 transition duration-300"
+                >
+                    <span class="font-bold text-lg text-amber-400">SAVED (<span id="savedCount">0</span>)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Next Race Section -->
+        <div class="mb-10 text-center md:text-left" id="nextRaceSection">
+            <p class="text-2xl text-gray-100">
+                Next Race: <span class="text-orange-500 font-bold" id="nextRaceName"></span> In
+                <span class="text-red-500 font-extrabold" id="countdownDays">0</span> days,
+                <span class="text-red-500 font-extrabold" id="countdownHours">0</span> hours,
+                <span class="text-red-500 font-extrabold" id="countdownMinutes">0</span> minutes
+            </p>
+            <p class="text-lg text-gray-300">
+                Circuit: <span id="nextRaceCircuit"></span>
+            </p>
+        </div>
+
+        <!-- Accordion Dropdowns Section -->
+        <div class="mb-10" id="accordionSection">
+            <!-- RaceName Accordion -->
+            <div class="mb-3">
+                <div
+                    id="raceHeader"
+                    class="accordion-header flex justify-between items-center p-4 cursor-pointer bg-gray-700 font-bold text-blue-400"
+                >
+                    <span class="text-lg">Race Name</span>
+                    <span class="text-lg">&#9660;</span>
+                </div>
+                <div id="raceContent" class="accordion-content">
+                    <select
+                        id="raceNameSelect"
+                        class="w-full bg-gray-900 text-gray-200 border border-gray-600 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                    >
+                        <option value="" disabled selected>Select a Race Name</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- TeamNames Accordion -->
+            <div class="mb-3 hidden" id="teamAccordionItem">
+                <div
+                    id="teamHeader"
+                    class="accordion-header flex justify-between items-center p-4 cursor-pointer bg-gray-700 font-bold text-blue-400"
+                >
+                    <span class="text-lg">Team Name</span>
+                    <span class="text-lg">&#9660;</span>
+                </div>
+                <div id="teamContent" class="accordion-content">
+                    <select
+                        id="teamNamesSelect"
+                        class="w-full bg-gray-900 text-gray-200 border border-gray-600 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                    >
+                        <option value="" disabled selected>Select a Team Name</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- UpgradesName Accordion -->
+            <div class="mb-3 hidden" id="upgradesAccordionItem">
+                <div
+                    id="upgradesHeader"
+                    class="accordion-header flex justify-between items-center p-4 cursor-pointer bg-gray-700 font-bold text-blue-400"
+                >
+                    <span class="text-lg">Upgrade Name</span>
+                    <span class="text-lg">&#9660;</span>
+                </div>
+                <div id="upgradesContent" class="accordion-content">
+                    <select
+                        id="upgradesNameSelect"
+                        class="w-full bg-gray-900 text-gray-200 border border-gray-600 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                    >
+                        <option value="" disabled selected>Select an Upgrade</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details and Spoilers Section -->
+        <div class="flex flex-col md:flex-row gap-8 mb-8 hidden" id="detailsSection">
+            <div class="relative flex-1 bg-gray-800 border border-gray-700 p-8 rounded-xl shadow-lg">
+                <h3 class="font-bold text-2xl mb-4 text-white">Details</h3>
+
+                <!-- Spoilers Switch integrated into the top right of Details -->
+                <div class="absolute top-6 right-6 flex items-center gap-3">
+                    <span class="font-semibold text-sm text-gray-300">Spoilers Switch</span>
+                    <label for="spoilerToggle" class="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            id="spoilerToggle"
+                            class="sr-only peer"
+                        />
+                        <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <p class="mb-3 text-gray-300"><span class="font-semibold text-white">Part Name:</span> <span id="detailPartName"></span></p>
+                <p class="mb-3 text-gray-300"><span class="font-semibold text-white">Reason for upgrade:</span> <span id="detailPrimaryReason"></span></p>
+                <p class="mb-3 text-gray-300"><span class="font-semibold text-white">Geometric Differences:</span> <span id="detailGeometricDifferences"></span></p>
+                <p class="text-gray-300"><span class="font-semibold text-white">Description:</span> <span id="detailDescription"></span></p>
+
+                <button
+                    id="saveDetailButton"
+                    class="mt-8 px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 shadow-xl font-bold tracking-wide"
+                >
+                    Save Detail Card <span class="ml-2 text-lg">&#10003;</span>
+                </button>
+
+                <!-- Spoiler Content related to the switch, positioned below the details -->
+                <div id="spoilerContent" class="text-center bg-gray-900 border border-gray-700 p-5 rounded-lg mt-8 shadow-inner hidden">
+                    <p class="font-bold text-lg text-red-400 mb-2">(Best qualifiers name)</p>
+                    <p class="font-bold text-xl text-red-500">Winner Name: Max Verstappen</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Saved Details View -->
+        <div id="savedDetailsView" class="bg-zinc-800 border border-zinc-700 p-8 rounded-xl shadow-2xl w-full max-w-4xl mx-auto hidden">
+            <h3 class="font-bold text-2xl mb-6 text-white text-center">Your Saved Details</h3>
+            <div id="savedDetailsListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Saved cards will be rendered here -->
+            </div>
+            <p id="noSavedDetailsMessage" class="text-gray-400 text-center mt-4 hidden">No details saved yet.</p>
+            <button
+                id="backToMainButton"
+                class="mt-8 px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition duration-300 shadow-lg font-bold mx-auto block"
+            >
+                Back to Main
+            </button>
+        </div>
+
+        <!-- Custom Alert Modal -->
+        <div id="customAlert" class="custom-alert hidden">
+            <p id="customAlertMessage" class="text-lg font-semibold"></p>
+            <button id="customAlertCloseButton" class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-6 rounded-md transition duration-300">
+                OK
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // Global Variables (replacing React state)
+        let spoilerOn = false;
+        let selectedRaceName = '';
+        let selectedConstructor = '';
+        let selectedUpdatedComponent = ''; // This will trigger details display
+
+        let openAccordion = null; // 'race', 'team', 'upgrades'
+        let showDetailsCard = false;
+        let showSavedDetailsView = false; // Controls main view vs saved list view
+
+        let detailsData = {
+            updatedComponent: '',
+            primaryReason: '',
+            geometricDifferences: '',
+            description: ''
+        };
+
+        let savedDetailsList = []; // In-memory storage for saved details
+
+        // DOM Element References
+        const nextRaceNameSpan = document.getElementById('nextRaceName');
+        const nextRaceCircuitSpan = document.getElementById('nextRaceCircuit');
+        const countdownDaysSpan = document.getElementById('countdownDays');
+        const countdownHoursSpan = document.getElementById('countdownHours');
+        const countdownMinutesSpan = document.getElementById('countdownMinutes');
+
+        const savedButton = document.getElementById('savedButton');
+        const savedCountSpan = document.getElementById('savedCount');
+        const savedDetailsView = document.getElementById('savedDetailsView');
+        const savedDetailsListContainer = document.getElementById('savedDetailsListContainer');
+        const noSavedDetailsMessage = document.getElementById('noSavedDetailsMessage');
+        const backToMainButton = document.getElementById('backToMainButton');
+
+        const accordionSection = document.getElementById('accordionSection');
+        const raceHeader = document.getElementById('raceHeader');
+        const raceContent = document.getElementById('raceContent');
+        const raceNameSelect = document.getElementById('raceNameSelect');
+
+        const teamAccordionItem = document.getElementById('teamAccordionItem');
+        const teamHeader = document.getElementById('teamHeader');
+        const teamContent = document.getElementById('teamContent');
+        const teamNamesSelect = document.getElementById('teamNamesSelect');
+
+        const upgradesAccordionItem = document.getElementById('upgradesAccordionItem');
+        const upgradesHeader = document.getElementById('upgradesHeader');
+        const upgradesContent = document.getElementById('upgradesContent');
+        const upgradesNameSelect = document.getElementById('upgradesNameSelect');
+
+        const detailsSection = document.getElementById('detailsSection');
+        const detailPartName = document.getElementById('detailPartName');
+        const detailPrimaryReason = document.getElementById('detailPrimaryReason');
+        const detailGeometricDifferences = document.getElementById('detailGeometricDifferences');
+        const detailDescription = document.getElementById('detailDescription');
+        const saveDetailButton = document.getElementById('saveDetailButton');
+
+        const spoilerToggle = document.getElementById('spoilerToggle');
+        const spoilerContent = document.getElementById('spoilerContent');
+
+        const customAlert = document.getElementById('customAlert');
+        const customAlertMessage = document.getElementById('customAlertMessage');
+        const customAlertCloseButton = document.getElementById('customAlertCloseButton');
+
+        // 2025 Race Schedule Data
+        const raceSchedule = [
+            { name: "Moët & Chandon Belgian GP", circuit: "Circuit de Spa-Francorchamps", raceDate: new Date("2025-07-27T09:00:00") },
+            { name: "Lenovo Hungarian GP", circuit: "Hungaroring", raceDate: new Date("2025-08-03T09:00:00") },
+            { name: "Heineken Dutch GP", circuit: "Circuit Park Zandvoort", raceDate: new Date("2025-08-31T09:00:00") },
+            { name: "Pirelli Italian GP", circuit: "Autodromo Nazionale Monza", raceDate: new Date("2025-09-07T09:00:00") },
+            { name: "Qatar Airways Azerbaijan GP", circuit: "Baku City Circuit", raceDate: new Date("2025-09-21T07:00:00") },
+            { name: "Singapore Airlines Singapore GP", circuit: "Marina Bay Street Circuit", raceDate: new Date("2025-10-05T08:00:00") },
+            { name: "MSC Cruises United States GP", circuit: "Circuit of the Americas", raceDate: new Date("2025-10-19T15:00:00") },
+            { name: "Mexico City GP", circuit: "Autodromo Hermanos Rodriguez", raceDate: new Date("2025-10-26T16:00:00") },
+            { name: "MSC Cruises São Paulo GP", circuit: "Autodromo Jose Carlos Pace", raceDate: new Date("2025-11-09T12:00:00") },
+            { name: "Heineken Las Vegas GP", circuit: "Las Vegas Street Circuit", raceDate: new Date("2025-11-22T23:00:00") },
+            { name: "Qatar Airways Qatar GP", circuit: "Losail International Circuit", raceDate: new Date("2025-11-30T11:00:00") },
+            { name: "Etihad Airways Abu Dhabi GP", circuit: "Yas Marina Circuit", raceDate: new Date("2025-12-07T08:00:00") },
+        ];
+
+        // Upgrade Data
+        const upgradeData = [
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'MONEYGRAM HAAS F1 TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 1, UpdatedComponent: 'Coke/Engine Cover.', PrimaryReason: 'Circuit specific-Cooling Range.', GeometricDifferences: 'Larger Engine Cover Cooling Exit.', Description: 'This option represents a cooling option, widercentral exit allows more heat rejection. Option designed to minimize the Aero penalty.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'MONEYGRAM HAAS F1 TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 2, UpdatedComponent: 'Cooling Louvres.', PrimaryReason: 'Circuit specific-Cooling Range.', GeometricDifferences: 'Set of Sidepod top and engine cover louvers.', Description: 'Further cooling options with the possibility to fitlouvres on the Sidepod top (most efficient ones as on top of the radiators) and a range of louvres on the new Engine cover to fine tune the potential cooling requirements.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'BWT ALPINE F1 TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 1, UpdatedComponent: 'Rear Corner.', PrimaryReason: 'Circuit specific-Cooling Range.', GeometricDifferences: 'New inlet and exit ducts with new furniture.', Description: 'As part of our normal development cycle, this newrear corner aims at giving more authority on the management of our rear brakes temperature through a wider inlet duct as well as a larger exit duct.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ASTON MARTIN ARAMCO FORMULA ONE TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 1, UpdatedComponent: 'Front Wing.', PrimaryReason: 'Circuit specific-Balance Range.', GeometricDifferences: 'A new Flap for the wing introduced at Silverstone with more aggression.', Description: 'The more aggressive design increases the load onthe wing to balance the car with the higher loaded rear wing which will be used at this event.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ASTON MARTIN ARAMCO FORMULA ONE TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 2, UpdatedComponent: 'Halo.', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'The vanes attached to the Halo are revised with one that now joins the bodywork top deck.', Description: 'The vanes around the cockpit are designed tocontrol the position of some of the lower energy flow from this surrounding area.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ASTON MARTIN ARAMCO FORMULA ONE TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 3, UpdatedComponent: 'Floor Body.', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'The main body of the floor has evolved slightly in most places with the fences and floor edge.', Description: 'The revised shapes improve the flowfield under thefloor increasing the local load generated on the lower surface and hence performance.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ASTON MARTIN ARAMCO FORMULA ONE TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 4, UpdatedComponent: 'Floor Fences.', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'The fences are redistributed across the LE of the floor with revised curvature and leading edge profiles.', Description: 'The revised shapes improve the flowfield under thefloor increasing the local load generated on the lower surface and hence performance.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ASTON MARTIN ARAMCO FORMULA ONE TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 5, UpdatedComponent: 'Floor Edge.', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'Small changes to the details of the floor edge wing and the main floor inboard of this.', Description: 'The revised shapes improve the flowfield under thefloor increasing the local load generated on the lower surface and hence performance.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ASTON MARTIN ARAMCO FORMULA ONE TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 6, UpdatedComponent: 'Diffuser.', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'The diffuser is a slightly modified shape with boat surface.', Description: 'The changes to the shape modify the expansion inthe diffuser to improve flow characteristics and the load generated on the surfaces.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ASTON MARTIN ARAMCO FORMULA ONE TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 7, UpdatedComponent: 'Beam Wing', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'Revised beam wing with more raised second element outboard.', Description: 'The changes to the OB of the beam wing effects thebalance of performance between the floor and rear wing for improved performance.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'MERCEDES-AMG PETRONAS F1 TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 1, UpdatedComponent: 'Rear Corner.', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'Lower defector endplate trim.', Description: 'Trimming the lower deflector endplate reduceslocal flow losses and therefore improves rear downforce through a range of ride heights.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'SCUDERIA FERRARI', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 1, UpdatedComponent: 'Floor Body.', PrimaryReason: 'Performance-Flow Conditioning.', GeometricDifferences: 'Reworked floor underbody.', Description: 'As a further evolution of the upgrade brought in Spain, this minor geometrical modification aims atenhancing flow structure and aero loads stability across the full operating envelope.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'WILLIAMS RACING', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 1, UpdatedComponent: 'Coke/Engine Cover.', PrimaryReason: 'Circuit specific Cooling Range.', GeometricDifferences: 'A new central exit duct for the cooling system is available. It is physically larger than those run previously.', Description: 'This new larger exit simply results in a larger airmass flow rate through the cooling system. This increases the cooling to the PU and GBox fluids but comes at the cost of downforce and drag performance. It will be fitted if the ambient conditions demand it.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'VISA CASH APP RB FORMULA ONE TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 1, UpdatedComponent: 'Front Corner.', PrimaryReason: 'Circuit specific-Cooling Range.', GeometricDifferences: 'Updated internal ducting.', Description: 'The duct modifications improve the flowmanagement through the brake system, ensuring that the incoming mass flow is distributed in the correct proportions to the individual items than need cooling.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'VISA CASH APP RB FORMULA ONE TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 2, UpdatedComponent: 'Rear Corner.', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'The geometry of the winglets on the rear corner has been updated.', Description: 'Additional downforce is generated, suitable forhigh-downforce circuits such as Hungary.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'STAKE F1 TEAM KICK SAUBER', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 1, UpdatedComponent: 'Sidepod Inlet.', PrimaryReason: 'Performance-Flow Conditioning.', GeometricDifferences: 'Revised sidepod inlet geometry.', Description: 'Combined with the reworked engine cover, the newsidepod inlet delivers better flow quality down the side of the car.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'STAKE F1 TEAM KICK SAUBER', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 2, UpdatedComponent: 'Coke/EngineCover', PrimaryReason: 'Performance-Flow Conditioning.', GeometricDifferences: 'Engine cover top surface re-designed.', Description: 'Bodywork and sidepod were changed together toimprove the quality of the flow reaching the floor edge and the rear of the car.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'STAKE F1 TEAM KICK SAUBER', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 3, UpdatedComponent: 'Floor Body.', PrimaryReason: 'Performance-Flow Conditioning.', GeometricDifferences: 'Reworked floor height and shape, combined with reoptimized floor fences.', Description: 'The new front floor shape combined with thereworked fences deliver additionnal local load whilst maintaining a good flow quality for the rear floor.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'STAKE F1 TEAM KICK SAUBER', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 4, UpdatedComponent: 'Floor Edge.', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'Closed floor edge slot.', Description: 'The new floor edge delivers a local load increasewhilst maintaining the vorticity level in the diffuser under control.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'STAKE F1 TEAM KICK SAUBER', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 5, UpdatedComponent: 'Rear Corner.', PrimaryReason: 'Performance-Local Load.', GeometricDifferences: 'New brake scoop duct, deflectors geometries and associated suspension fairings.', Description: 'The new corner and rear suspension coversdelivered a step of performance when combined with the new bodywork and floor, both in local load and in the surrounding area.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'STAKE F1 TEAM KICK SAUBER', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 6, UpdatedComponent: 'Rear Suspension', PrimaryReason: 'Performance-Flow Conditioning.', GeometricDifferences: 'New rear suspension fairings associated to the newrear corner.', Description: 'The fairings were part of the new corner described above. They were realigned to the changes onset condtitions from the updated bodywork and deliver a clean flow for the rear floor and rear corner devices.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'STAKE F1 TEAM KICK SAUBER', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 7, UpdatedComponent: 'Halo.', PrimaryReason: 'Performance-Flow Conditioning.', GeometricDifferences: 'Revised halo design combined with a new deflector', Description: 'Halo design revised to improve the flow qualityalong the bodywork with an improved control of the cockpit losses.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'STAKE F1 TEAM KICK SAUBER', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 8, UpdatedComponent: 'Mirror', PrimaryReason: 'Performance-Flow Conditioning.', GeometricDifferences: 'Updated mirror geometries.', Description: 'Together with the sidepod inlet and the enginecover update we adapted the mirror stays to achieve better flow control and flow quality towards the rear end.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'STAKE F1 TEAM KICK SAUBER', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 9, UpdatedComponent: 'Headrest', PrimaryReason: 'Performance-Flow Conditioning', GeometricDifferences: 'Raised headrest shoulders.', Description: 'Together with the sidepod inlet update which isslightly raised we adapted the headrest shoulder towards the sidepod / engine cover for a smooth transition.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ORACLE RED BULL RACING TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 1, UpdatedComponent: 'Coke/Engine Cover.', PrimaryReason: 'Circuit specific Cooling Range', GeometricDifferences: 'Re-sculpted sidepods and engine cover revising the central exit and louvre exits.', Description: 'Better cooling efficiency is attained for a highambient temperature and relatively slow circuit with the revised geometry by reducing the load losses in such conditions from the exits.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ORACLE RED BULL RACING TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 2, UpdatedComponent: 'Halo.', PrimaryReason: 'Circuit specific Cooling Range.', GeometricDifferences: 'Revised fairings towards the rearward mounts to suit the topbody downstream.', Description: 'A knock on effect of the topbody changes requireda revision to the Halo fairings to eliminate mismatches in the local surfaces' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ORACLE RED BULL RACING TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 3, UpdatedComponent: 'Rear Corner.', PrimaryReason: 'Performance Local Load.', GeometricDifferences: 'Revised wrap-around profile of the wheel bodywork.', Description: 'Changes to the profile of the wrap-aroundupstream of the inatakes have given improvements in brake and caliper cooling intake pressures for better efficiencies.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ORACLE RED BULL RACING TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 4, UpdatedComponent: 'Front Wing.', PrimaryReason: 'Performance Local Load.', GeometricDifferences: 'New profiles based upon previous designs affecting all four elements.', Description: 'Knowledge from the previous wings has allowed usto extract more load form revised profiles without affecting flow stability and protect downstream consequences.' },
+            { Year: 2024, RaceNo: 14, RaceName: 'Hungarian Grand Prix', Constructor: 'ORACLE RED BULL RACING TEAM', RequiredEventDisplay: 'FORMULA 1 HUNGARIAN GRAND PRIX 2024', ComponentNo: 5, UpdatedComponent: 'Front Corner.', PrimaryReason: 'Performance Flow Conditioning.', GeometricDifferences: 'Revised front lower wishbone forward leg shroud profile.', Description: 'A further optimisation of the front lower wishboneforward leg shroud to provide higher pressure downstream.' },
+        ];
+
+
+        // --- Utility Functions ---
+
+        function calculateCountdown(targetDate) {
+            const now = new Date().getTime();
+            const distance = targetDate.getTime() - now;
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+
+            return { days, hours, minutes };
+        }
+
+        function showAlert(message) {
+            customAlertMessage.textContent = message;
+            customAlert.classList.remove('hidden');
+        }
+
+        function closeAlert() {
+            customAlert.classList.add('hidden');
+        }
+
+        // --- Accordion Logic ---
+
+        function toggleAccordion(accordionId, headerElement, contentElement) {
+            // Close all other accordions and remove 'active' class
+            document.querySelectorAll('.accordion-content').forEach(content => {
+                content.classList.add('hidden');
+                content.classList.remove('active'); // Ensure active is removed
+                const header = content.previousElementSibling;
+                if (header) {
+                    header.querySelector('span:last-child').innerHTML = '&#9660;'; // Down arrow
+                }
+            });
+
+            // Toggle the clicked accordion
+            if (openAccordion === accordionId) {
+                // If clicking the currently open accordion, close it
+                contentElement.classList.add('hidden');
+                contentElement.classList.remove('active'); // Ensure active is removed
+                headerElement.querySelector('span:last-child').innerHTML = '&#9660;'; // Down arrow
+                openAccordion = null;
+            } else {
+                // If opening a new accordion
+                contentElement.classList.remove('hidden');
+                contentElement.classList.add('active'); // Add active class to show content
+                headerElement.querySelector('span:last-child').innerHTML = '&#9650;'; // Up arrow
+                openAccordion = accordionId;
+            }
+        }
+
+        // --- Data Filtering Functions ---
+
+        function getRaceNames() {
+            return [...new Set(upgradeData.map(item => item.RaceName))];
+        }
+
+        function getConstructors() {
+            if (!selectedRaceName) return [];
+            const filteredData = upgradeData.filter(item => item.RaceName === selectedRaceName);
+            return [...new Set(filteredData.map(item => item.Constructor))];
+        }
+
+        function getUpdatedComponents() {
+            if (!selectedRaceName || !selectedConstructor) return [];
+            const filteredData = upgradeData.filter(
+                item => item.RaceName === selectedRaceName && item.Constructor === selectedConstructor
+            );
+            return [...new Set(filteredData.map(item => item.UpdatedComponent))];
+        }
+
+        // --- UI Update Functions ---
+
+        function updateRaceNamesSelect() {
+            raceNameSelect.innerHTML = '<option value="" disabled selected>Select a Race Name</option>';
+            getRaceNames().forEach(raceName => {
+                const option = document.createElement('option');
+                option.value = raceName;
+                option.textContent = raceName;
+                raceNameSelect.appendChild(option);
+            });
+        }
+
+        function updateTeamNamesSelect() {
+            teamNamesSelect.innerHTML = '<option value="" disabled selected>Select a Team Name</option>';
+            if (selectedRaceName) {
+                getConstructors().forEach(constructor => {
+                    const option = document.createElement('option');
+                    option.value = constructor;
+                    option.textContent = constructor;
+                    teamNamesSelect.appendChild(option);
+                });
+            }
+        }
+
+        function updateUpgradesNameSelect() {
+            upgradesNameSelect.innerHTML = '<option value="" disabled selected>Select an Upgrade</option>';
+            if (selectedRaceName && selectedConstructor) {
+                getUpdatedComponents().forEach(component => {
+                    const option = document.createElement('option');
+                    option.value = component;
+                    option.textContent = component;
+                    upgradesNameSelect.appendChild(option);
+                });
+            }
+        }
+
+        function updateDetailsCard() {
+            detailPartName.textContent = detailsData.updatedComponent;
+            detailPrimaryReason.textContent = detailsData.primaryReason;
+            detailGeometricDifferences.textContent = detailsData.geometricDifferences;
+            detailDescription.textContent = detailsData.description;
+
+            if (showDetailsCard) {
+                detailsSection.classList.remove('hidden');
+            } else {
+                detailsSection.classList.add('hidden');
+            }
+        }
+
+        function updateSavedCount() {
+            savedCountSpan.textContent = savedDetailsList.length;
+        }
+
+        function renderSavedDetailsList() {
+            savedDetailsListContainer.innerHTML = ''; // Clear previous list
+            if (savedDetailsList.length === 0) {
+                noSavedDetailsMessage.classList.remove('hidden');
+            } else {
+                noSavedDetailsMessage.classList.add('hidden');
+                savedDetailsList.forEach(item => {
+                    const savedCard = document.createElement('div');
+                    savedCard.className = `bg-gray-700 border border-gray-600 p-5 rounded-lg shadow-md cursor-pointer
+                                           hover:bg-gray-600 hover:scale-105 transition-all duration-200 ease-in-out relative`; // Added relative for positioning button
+                    savedCard.innerHTML = `
+                        <p class="font-semibold text-blue-300 text-lg mb-2">${item.updatedComponent}</p>
+                        <p class="text-sm text-gray-300">Race: ${item.raceName}</p>
+                        <p class="text-sm text-gray-300">Team: ${item.constructor}</p>
+                        <p class="text-sm text-gray-400 mt-2 line-clamp-3">${item.description}</p>
+                        <button class="remove-button absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold"
+                                data-id="${item.id}">X</button>
+                    `;
+                    savedCard.addEventListener('click', (event) => {
+                        // Prevent event bubbling from the remove button
+                        if (!event.target.classList.contains('remove-button')) {
+                            handleViewSavedDetail(item);
+                        }
+                    });
+                    savedDetailsListContainer.appendChild(savedCard);
+                });
+
+                // Attach event listeners to all remove buttons after rendering
+                document.querySelectorAll('.remove-button').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const idToRemove = parseInt(event.target.dataset.id);
+                        handleRemoveSavedDetail(idToRemove);
+                    });
+                });
+            }
+        }
+
+
+        // --- Event Handlers ---
+
+        function handleRaceNameChange(event) {
+            selectedRaceName = event.target.value;
+            selectedConstructor = '';
+            selectedUpdatedComponent = '';
+            detailsData = { updatedComponent: '', primaryReason: '', geometricDifferences: '', description: '' };
+            showDetailsCard = false;
+            updateTeamNamesSelect();
+            updateUpgradesNameSelect(); // Clear upgrades too
+            updateDetailsCard();
+
+            if (selectedRaceName) {
+                teamAccordionItem.classList.remove('hidden');
+                upgradesAccordionItem.classList.add('hidden'); // Ensure upgrades is hidden
+                toggleAccordion('team', teamHeader, teamContent); // Open next accordion
+            } else {
+                teamAccordionItem.classList.add('hidden');
+                upgradesAccordionItem.classList.add('hidden');
+                openAccordion = null; // Close all
+            }
+        }
+
+        function handleConstructorChange(event) {
+            selectedConstructor = event.target.value;
+            selectedUpdatedComponent = '';
+            detailsData = { updatedComponent: '', primaryReason: '', geometricDifferences: '', description: '' };
+            showDetailsCard = false;
+            updateUpgradesNameSelect();
+            updateDetailsCard();
+
+            if (selectedConstructor) {
+                upgradesAccordionItem.classList.remove('hidden');
+                toggleAccordion('upgrades', upgradesHeader, upgradesContent); // Open next accordion
+            } else {
+                upgradesAccordionItem.classList.add('hidden');
+                toggleAccordion('race', raceHeader, raceContent); // Go back to race if unselected
+            }
+        }
+
+        function handleUpdatedComponentChange(event) {
+            selectedUpdatedComponent = event.target.value;
+            if (selectedUpdatedComponent) {
+                const foundDetail = upgradeData.find(
+                    item =>
+                        item.RaceName === selectedRaceName &&
+                        item.Constructor === selectedConstructor &&
+                        item.UpdatedComponent === selectedUpdatedComponent
+                );
+
+                if (foundDetail) {
+                    detailsData = {
+                        updatedComponent: foundDetail.UpdatedComponent,
+                        primaryReason: foundDetail.PrimaryReason,
+                        geometricDifferences: foundDetail.GeometricDifferences,
+                        description: foundDetail.Description
+                    };
+                    showDetailsCard = true;
+                } else {
+                    showDetailsCard = false;
+                    detailsData = { updatedComponent: '', primaryReason: '', geometricDifferences: '', description: '' };
+                }
+                openAccordion = null; // Close all accordions after final selection
+            } else {
+                showDetailsCard = false;
+                detailsData = { updatedComponent: '', primaryReason: '', geometricDifferences: '', description: '' };
+                toggleAccordion('team', teamHeader, teamContent); // Go back to team if unselected
+            }
+            updateDetailsCard();
+            // Re-render accordions to reflect closed state
+            document.querySelectorAll('.accordion-content').forEach(content => {
+                content.classList.add('hidden');
+                content.classList.remove('active'); // Ensure active is removed
+            });
+            document.querySelectorAll('.accordion-header span:last-child').forEach(arrow => arrow.innerHTML = '&#9660;');
+        }
+
+        function handleSaveDetail() {
+            if (!detailsData.updatedComponent) {
+                showAlert("Please select an upgrade to save details.");
+                return;
+            }
+
+            // Check for duplicates
+            const isDuplicate = savedDetailsList.some(item =>
+                item.raceName === selectedRaceName &&
+                item.constructor === selectedConstructor &&
+                item.updatedComponent === selectedUpdatedComponent
+            );
+
+            if (isDuplicate) {
+                showAlert("This detail card is already saved!");
+                return;
+            }
+
+            const newSavedItem = {
+                id: Date.now(), // Simple unique ID
+                ...detailsData,
+                raceName: selectedRaceName,
+                constructor: selectedConstructor,
+                updatedComponent: selectedUpdatedComponent
+            };
+
+            savedDetailsList.push(newSavedItem);
+            updateSavedCount();
+            showAlert("Detail saved successfully to app memory!");
+
+            // Optionally clear current selections after saving
+            selectedRaceName = '';
+            selectedConstructor = '';
+            selectedUpdatedComponent = '';
+            detailsData = { updatedComponent: '', primaryReason: '', geometricDifferences: '', description: '' };
+            showDetailsCard = false;
+            openAccordion = null;
+
+            // Reset dropdowns and hide conditional accordions
+            raceNameSelect.value = '';
+            teamNamesSelect.value = '';
+            upgradesNameSelect.value = '';
+            teamAccordionItem.classList.add('hidden');
+            upgradesAccordionItem.classList.add('hidden');
+            updateTeamNamesSelect(); // Clear options
+            updateUpgradesNameSelect(); // Clear options
+            updateDetailsCard(); // Hide details card
+            // Reset all accordion arrows to down
+            document.querySelectorAll('.accordion-header span:last-child').forEach(arrow => arrow.innerHTML = '&#9660;');
+            raceContent.classList.add('hidden');
+            raceContent.classList.remove('active'); // Ensure active is removed
+        }
+
+        function handleRemoveSavedDetail(id) {
+            const initialLength = savedDetailsList.length;
+            savedDetailsList = savedDetailsList.filter(item => item.id !== id);
+            if (savedDetailsList.length < initialLength) {
+                showAlert("Detail card removed successfully!");
+            } else {
+                showAlert("Could not find detail card to remove.");
+            }
+            updateSavedCount();
+            renderSavedDetailsList(); // Re-render the list after removal
+        }
+
+        function handleViewSavedDetail(item) {
+            detailsData = {
+                updatedComponent: item.updatedComponent,
+                primaryReason: item.primaryReason,
+                geometricDifferences: item.geometricDifferences,
+                description: item.description
+            };
+            selectedRaceName = item.raceName || '';
+            selectedConstructor = item.constructor || '';
+            selectedUpdatedComponent = item.updatedComponent || '';
+            showDetailsCard = true;
+            showSavedDetailsView = false; // Hide the list of saved details
+            openAccordion = null; // Close any open accordions
+            updateDetailsCard(); // Update and show the details card
+            updateMainViewVisibility(); // Show main view elements
+        }
+
+        function handleSavedButtonClick() {
+            showSavedDetailsView = true;
+            updateMainViewVisibility();
+            renderSavedDetailsList();
+        }
+
+        function handleBackToMainButtonClick() {
+            showSavedDetailsView = false;
+            updateMainViewVisibility();
+            // Reset main selections to default state
+            selectedRaceName = '';
+            selectedConstructor = '';
+            selectedUpdatedComponent = '';
+            detailsData = { updatedComponent: '', primaryReason: '', geometricDifferences: '', description: '' };
+            showDetailsCard = false;
+            openAccordion = null;
+            raceNameSelect.value = '';
+            teamNamesSelect.value = '';
+            upgradesNameSelect.value = '';
+            teamAccordionItem.classList.add('hidden');
+            upgradesAccordionItem.classList.add('hidden');
+            updateTeamNamesSelect();
+            updateUpgradesNameSelect();
+            updateDetailsCard();
+            document.querySelectorAll('.accordion-header span:last-child').forEach(arrow => arrow.innerHTML = '&#9660;');
+            raceContent.classList.add('hidden');
+            raceContent.classList.remove('active'); // Ensure active is removed
+        }
+
+        function updateMainViewVisibility() {
+            if (showSavedDetailsView) {
+                accordionSection.classList.add('hidden');
+                detailsSection.classList.add('hidden');
+                savedDetailsView.classList.remove('hidden');
+            } else {
+                accordionSection.classList.remove('hidden');
+                // Details section visibility is controlled by showDetailsCard
+                if (showDetailsCard) {
+                    detailsSection.classList.remove('hidden');
+                } else {
+                    detailsSection.classList.add('hidden');
+                }
+                savedDetailsView.classList.add('hidden');
+            }
+        }
+
+
+        // --- Initial Setup and Event Listeners ---
+        window.onload = function () {
+            // Initial render of dropdowns
+            updateRaceNamesSelect();
+            updateTeamNamesSelect();
+            updateUpgradesNameSelect();
+            updateSavedCount();
+            updateMainViewVisibility(); // Set initial view state
+
+            // Set up event listeners
+            raceHeader.addEventListener('click', () => toggleAccordion('race', raceHeader, raceContent));
+            teamHeader.addEventListener('click', () => toggleAccordion('team', teamHeader, teamContent));
+            upgradesHeader.addEventListener('click', () => toggleAccordion('upgrades', upgradesHeader, upgradesContent));
+
+            raceNameSelect.addEventListener('change', handleRaceNameChange);
+            teamNamesSelect.addEventListener('change', handleConstructorChange);
+            upgradesNameSelect.addEventListener('change', handleUpdatedComponentChange);
+
+            spoilerToggle.addEventListener('change', (event) => {
+                spoilerOn = event.target.checked;
+                if (spoilerOn) {
+                    spoilerContent.classList.remove('hidden');
+                } else {
+                    spoilerContent.classList.add('hidden');
+                }
+            });
+
+            saveDetailButton.addEventListener('click', handleSaveDetail);
+            savedButton.addEventListener('click', handleSavedButtonClick);
+            backToMainButton.addEventListener('click', handleBackToMainButtonClick);
+            customAlertCloseButton.addEventListener('click', closeAlert);
+
+
+            // Countdown Interval
+            let currentRaceIndex = 0;
+            const updateCountdown = () => {
+                const currentRace = raceSchedule[currentRaceIndex];
+                if (!currentRace) return; // Should not happen if schedule is not empty
+
+                const newCountdown = calculateCountdown(currentRace.raceDate);
+
+                if (newCountdown.days < 0 && newCountdown.hours < 0 && newCountdown.minutes < 0) {
+                    // If the current race has passed, move to the next one
+                    currentRaceIndex = (currentRaceIndex + 1) % raceSchedule.length;
+                    // Recalculate for the new race
+                    const nextRace = raceSchedule[currentRaceIndex];
+                    const nextCountdown = calculateCountdown(nextRace.raceDate);
+                    nextRaceNameSpan.textContent = nextRace.name;
+                    nextRaceCircuitSpan.textContent = nextRace.circuit;
+                    countdownDaysSpan.textContent = nextCountdown.days;
+                    countdownHoursSpan.textContent = nextCountdown.hours;
+                    countdownMinutesSpan.textContent = nextCountdown.minutes;
+                } else {
+                    nextRaceNameSpan.textContent = currentRace.name;
+                    nextRaceCircuitSpan.textContent = currentRace.circuit;
+                    countdownDaysSpan.textContent = newCountdown.days;
+                    countdownHoursSpan.textContent = newCountdown.hours;
+                    countdownMinutesSpan.textContent = newCountdown.minutes;
+                }
+            };
+
+            updateCountdown(); // Initial call
+            setInterval(updateCountdown, 1000); // Update every second
+        };
+    </script>
+</body>
+</html>
